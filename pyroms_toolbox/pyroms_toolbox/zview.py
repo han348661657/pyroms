@@ -74,6 +74,9 @@ def zview(var, tindex, depth, grid, filename=None, \
     if N == Np and M == Mp-1 and L == Lp:
         Cpos='v'
         mask = grd.hgrid.mask_v
+    if N==Np+1 and M==Mp and L==Lp:
+        Cpos='w'
+        mask = grd.hgrid.mask_rho
 
     # get constante-z slice
     if tindex == -1:

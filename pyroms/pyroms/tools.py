@@ -725,6 +725,30 @@ def transect(var, istart, iend, jstart, jend, grd, Cpos='rho', vert=False, \
                 x = grd.hgrid.x_rho[:]
                 y = grd.hgrid.y_rho[:]
         mask = grd.hgrid.mask_rho[:]
+    elif Cpos is 'w':
+        # for temp, salt, rho
+        if vert == True:
+            z = grd.vgrid.z_w[0,:]
+            z = 0.5 * (z[:,:,:-1] + z[:,:,1:])
+            z = 0.5 * (z[:,:-1,:] + z[:,1:,:])
+            z = np.concatenate((z[:,:,0:1], z, z[:,:,-1:]), 2)
+            z = np.concatenate((z[:,0:1,:], z, z[:,-1:,:]), 1)
+            if grd.hgrid.spherical == 'T':
+                x = grd.hgrid.lon_vert[:]
+                y = grd.hgrid.lat_vert[:]
+            elif grd.hgrid.spherical == 'F':
+                x = grd.hgrid.lon_vert[:]
+                y = grd.hgrid.lat_vert[:]
+        else:
+            z = grd.vgrid.z_w[0,:]
+            if grd.hgrid.spherical == 'T':
+                x = grd.hgrid.lon_rho[:]
+                y = grd.hgrid.lat_rho[:]
+            elif grd.hgrid.spherical == 'F':
+                x = grd.hgrid.x_rho[:]
+                y = grd.hgrid.y_rho[:]
+        mask = grd.hgrid.mask_rho[:]
+
 
     else:
         raise Warning('%s bad position. Valid Arakawa-C are \
@@ -767,7 +791,7 @@ def transect(var, istart, iend, jstart, jend, grd, Cpos='rho', vert=False, \
 
         # compute the nearest j point on the line crossing at i
         n=0
-        near = np.zeros(((i1-i0+1),4))
+        near = np.zeros(((i1-i0+1),4), dtype=int)
         for i in range(i0,i1+1):
             jj = aj*i + bj
             near[n,0] = i
@@ -782,7 +806,7 @@ def transect(var, istart, iend, jstart, jend, grd, Cpos='rho', vert=False, \
         else:
             # compute the nearest j vert point on the line crossing at i
             n=0
-            nearp = np.zeros(((i1-i0+2),4))
+            nearp = np.zeros(((i1-i0+2),4), dtype=int)
             for i in range(i0,i1+2):
                 jj = aj*(i-0.5) + bj
                 nearp[n,0] = i
@@ -817,7 +841,7 @@ def transect(var, istart, iend, jstart, jend, grd, Cpos='rho', vert=False, \
         else:
             # compute the nearest i vert point on the line crossing at j
             n=0
-            nearp = np.zeros(((j1-j0+2),4))
+            nearp = np.zeros(((j1-j0+2),4), dtype=int)
             for j in range(j0,j1+2):
                 ii = ai*(j-0.5) + bi
                 nearp[n,0] = j
@@ -831,8 +855,10 @@ def transect(var, istart, iend, jstart, jend, grd, Cpos='rho', vert=False, \
     # -------------------------------------------------------------
     # Initialize output variables
     nlev = z.shape[0]
-
-    transect = np.zeros((grd.vgrid.N, near.shape[0]))
+    if Cpos=='w':
+        transect = np.zeros((grd.vgrid.Np, near.shape[0]))
+    else:
+        transect = np.zeros((grd.vgrid.N, near.shape[0]))
     zs = np.zeros((nlev, nearp.shape[0]))
     xs = np.zeros((nlev, nearp.shape[0]))
     ys = np.zeros((nlev, nearp.shape[0]))
@@ -968,32 +994,32 @@ def lonslice(var, longitude, grd, Cpos='rho', vert=False, spval=1e37):
 
 
     if side[0] == 1 and side[1] == 2:
-        lonslice, z, lon, lat = pyroms.tools.section(var, \
+        lonslice, z, lon, lat = pyroms.tools.transect(var, \
                                 idx[pt_idx[0]], Lp-2, \
                                 1, idx[pt_idx[1]], \
                                 grd, Cpos=Cpos, vert=vert, spval=spval)
     elif side[0] == 1 and side[1] == 3:
-        lonslice, z, lon, lat = pyroms.tools.section(var, \
+        lonslice, z, lon, lat = pyroms.tools.transect(var, \
                                 idx[pt_idx[0]], idx[pt_idx[1]], \
                                 1, Mp-2, \
                                 grd, Cpos=Cpos, vert=vert, spval=spval)
     elif side[0] == 1 and side[1] == 4:
-        lonslice, z, lon, lat = pyroms.tools.section(var, \
+        lonslice, z, lon, lat = pyroms.tools.transect(var, \
                                 idx[pt_idx[0]], 1, \
                                 1, idx[pt_idx[1]], \
                                 grd, Cpos=Cpos, vert=vert, spval=spval)
     elif side[0] == 2 and side[1] == 3:
-        lonslice, z, lon, lat = pyroms.tools.section(var, \
+        lonslice, z, lon, lat = pyroms.tools.transect(var, \
                                 Lp-2, idx[pt_idx[1]], \
                                 idx[pt_idx[0]], Mp-2, \
                                 grd, Cpos=Cpos, vert=vert, spval=spval)
     elif side[0] == 2 and side[1] == 4:
-        lonslice, z, lon, lat = pyroms.tools.section(var, \
+        lonslice, z, lon, lat = pyroms.tools.transect(var, \
                                 Lp-2, 1, \
                                 idx[pt_idx[0]], idx[pt_idx[0]], \
                                 grd, Cpos=Cpos, vert=vert, spval=spval)
     elif side[0] == 3 and side[1] == 4:
-        lonslice, z, lon, lat = pyroms.tools.section(var, \
+        lonslice, z, lon, lat = pyroms.tools.transect(var, \
                                 idx[pt_idx[0]], 1, \
                                 Mp-2, idx[pt_idx[1]], \
                                 grd, Cpos=Cpos, vert=vert, spval=spval)
@@ -1030,6 +1056,9 @@ def latslice(var, latitude, grd, Cpos='rho', vert=False, spval=1e37):
         lon = grd.hgrid.lon_v
         lat = grd.hgrid.lat_v
     elif Cpos == 'rho':
+        lon = grd.hgrid.lon_rho
+        lat = grd.hgrid.lat_rho
+    elif Cpos == 'w':
         lon = grd.hgrid.lon_rho
         lat = grd.hgrid.lat_rho
     else:
@@ -1071,32 +1100,32 @@ def latslice(var, latitude, grd, Cpos='rho', vert=False, spval=1e37):
 
 
     if side[0] == 1 and side[1] == 2:
-        latslice, z, lon, lat = pyroms.tools.section(var, \
+        latslice, z, lon, lat = pyroms.tools.transect(var, \
                                 idx[pt_idx[0]], Lp-2, \
                                 1, idx[pt_idx[1]], \
                                 grd, Cpos=Cpos, vert=vert, spval=spval)
     elif side[0] == 1 and side[1] == 3:
-        latslice, z, lon, lat = pyroms.tools.section(var, \
+        latslice, z, lon, lat = pyroms.tools.transect(var, \
                                 idx[pt_idx[0]], idx[pt_idx[1]], \
                                 1, Mp-2, \
                                 grd, Cpos=Cpos, vert=vert, spval=spval)
     elif side[0] == 1 and side[1] == 4:
-        latslice, z, lon, lat = pyroms.tools.section(var, \
+        latslice, z, lon, lat = pyroms.tools.transect(var, \
                                 idx[pt_idx[0]], 1, \
                                 1, idx[pt_idx[1]], \
                                 grd, Cpos=Cpos, vert=vert, spval=spval)
     elif side[0] == 2 and side[1] == 3:
-        latslice, z, lon, lat = pyroms.tools.section(var, \
+        latslice, z, lon, lat = pyroms.tools.transect(var, \
                                 Lp-2, idx[pt_idx[1]], \
                                 idx[pt_idx[0]], Mp-2, \
                                 grd, Cpos=Cpos, vert=vert, spval=spval)
     elif side[0] == 2 and side[1] == 4:
-        latslice, z, lon, lat = pyroms.tools.section(var, \
+        latslice, z, lon, lat = pyroms.tools.transect(var, \
                                 Lp-2, 1, \
                                 idx[pt_idx[0]], idx[pt_idx[0]], \
                                 grd, Cpos=Cpos, vert=vert, spval=spval)
     elif side[0] == 3 and side[1] == 4:
-        latslice, z, lon, lat = pyroms.tools.section(var, \
+        latslice, z, lon, lat = pyroms.tools.transect(var, \
                                 idx[pt_idx[0]], 1, \
                                 Mp-2, idx[pt_idx[1]], \
                                 grd, Cpos=Cpos, vert=vert, spval=spval)
